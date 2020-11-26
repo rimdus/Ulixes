@@ -1,10 +1,11 @@
 {
   "name": "ulixes",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Node Dependency Injection package",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "scripts": {
+    "test": "mocha -r ts-node/register **/*.spec.ts",
     "lint": "eslint **/*.ts",
     "build": "gulp"
   },
