@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { DecoratorHelper } from './decorator.helper';
+import { DecoratorHelper } from '.';
 
 describe('decorator.helper', () => {
   context('methods', () => {
