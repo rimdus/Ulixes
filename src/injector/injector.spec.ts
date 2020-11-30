@@ -61,8 +61,6 @@ class Human {
 }
 
 describe('Injector', () => {
-
-
   context('Flat cases', () => {
     interface IGetCode {
       getCode: () => string;
@@ -134,11 +132,15 @@ describe('Injector', () => {
       expect(core.car.getWheelCode()).equal('custom');
     });
 
+    it('should inject AnyWheel as useValue instead of Wheel', () => {
+      const core = new Core([Car, { provide: Wheel, useValue: new AnyWheel('useValue') }]);
+      expect(core.car.getWheelCode()).equal('useValue');
+    });
+
     it('should inject literal object as useValue instead of Wheel', () => {
       const core = new Core([Car, { provide: Wheel, useValue: { getCode: () => 'wooden' } }]);
       expect(core.car.getWheelCode()).equal('wooden');
     });
-
   });
 
   context('Params cases', () => {
