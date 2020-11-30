@@ -9,7 +9,7 @@ export class DecoratorHelper {
   }
 
   public static getInjectionOptions(target: Function): IInjectOptionsMetadata {
-    return Reflect.getMetadata(INJECT_OPTIONS_METADATA, target);
+    return Reflect.getMetadata(INJECT_OPTIONS_METADATA, target) as IInjectOptionsMetadata;
   }
 
   public static defineInjectParam(target: Type<any>, paramIndex: number, token: string): void {
@@ -19,14 +19,14 @@ export class DecoratorHelper {
   }
 
   public static getInjectParams(target: Type<any>): TInjectParamsMetadata {
-    return DecoratorHelper.injectTargetParams.get(target) || new Map();
+    return DecoratorHelper.injectTargetParams.get(target) as TInjectParamsMetadata || new Map();
   }
 
-  public static getDesignType(target: Type<any>, key: string): Type<any> {
-    return Reflect.getMetadata('design:type', target, key);
+  public static getDesignType<T = any>(target: Type<T>, key: string): Type<T> {
+    return Reflect.getMetadata('design:type', target, key) as Type<T>;
   }
 
-  public static getParamTypes(target: Type<any>): Type<any>[] {
-    return Reflect.getMetadata(PARAMTYPES_METADATA, target) ?? [];
+  public static getParamTypes<T = any>(target: Type<T>): Type<T>[] {
+    return Reflect.getMetadata(PARAMTYPES_METADATA, target) as Type<T>[] ?? [];
   }
 }

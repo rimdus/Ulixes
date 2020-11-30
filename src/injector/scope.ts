@@ -1,7 +1,7 @@
 import { IProvide, TInjectParamsMetadata, Token, TProvider, Type } from '../interfaces';
 
 export class Scope {
-  private instances: Map<Type<any>, any> = new Map();
+  private instances: Map<Type<any>, any> = new Map<Type<any>, any>();
   private providers: TProvider<any>[];
   private parentScope: Scope | undefined;
 
@@ -11,7 +11,7 @@ export class Scope {
   }
 
   public findUpInstance<T = any>(type: Type<T>, injectParams?: TInjectParamsMetadata): T | undefined {
-    if (this.instances.has(type)) return this.instances.get(type);
+    if (this.instances.has(type)) return this.instances.get(type) as T;
     if (this.hasParamsInProviders(injectParams)) return undefined;
     if (this.hasTypeInProviders(type)) return undefined;
     if (this.parentScope) return this.parentScope.findUpInstance(type, injectParams);

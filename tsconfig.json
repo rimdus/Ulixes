@@ -3,7 +3,7 @@
     "module": "commonJS",
     "moduleResolution": "node",
     "pretty": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "target": "es2017",
     "lib": [
       "esnext",
@@ -15,7 +15,7 @@
     "declaration": true,
     "declarationDir": "./dist/types",
     "resolveJsonModule": true,
-    "skipLibCheck": true,
+    "skipLibCheck": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true
   },
@@ -24,7 +24,7 @@
     "**/*.ts"
   ],
   "exclude": [
-    "node_modules"// ,
-    // "**/*.spec.ts"
+    "node_modules",
+    "**/*.spec.ts"
   ]
 }

@@ -16,25 +16,83 @@ import {
 import { Scope } from './scope';
 import { DecoratorHelper } from '../decorators';
 
+/**
+ * The Injector class builds the injection tree and resolve all dependencies. Supports unlimited level of dependencies.
+ * This DI approach has inspired by angular and nest.js dependency injection, but realized pretty simple for using
+ * outside of the bulky frameworks.
+ *
+ * The tree traversal starts from root type (constructor or class) and going on to it's params of dependencies and so on.
+ * At the every level makes scope object. Scope stores its own unique providers for using in the lower levels for
+ * resolving instances.
+ *
+ * @example
+ * ```typescript
+ * import { Injectable, Inject } from 'ulixes';
+ *
+ * @Injectable()
+ * class Nail {
+ *   private color = 'transparent';
+ *   constructor(@Inject('NAIL_COLOR') color: string) {
+ *     this.color = color;
+ *   }
+ * }
+ *
+ * @Injectable()
+ * class Finger {
+ *   constructor(private nail: Nail) {
+ *     this.color = color;
+ *   }
+ * }
+ *
+ * @Injectable()
+ * class Hand {
+ *   constructor(private finger: Finger) {
+ *     this.color = color;
+ *   }
+ * }
+ *
+ * class Body() {
+ *   private injector: Injector;
+ *   private hand: Hand;
+ *   constructor() {
+ *     this.injector = Injector.create(this, [Hand, Finger, Nail, { provider: 'NAIL_COLOR', useValue: 'black' }]);
+ *     // instantiating Hand and resolving it's dependencies
+ *     this.hand = this.injector.instantiate(Hand);
+ *   }
+ * }
+ *
+ * const body = new Body();
+ * ```
+ */
 export class Injector {
-  private static collection: Map<any, Injector> = new Map();
+  private static collection: Map<any, Injector> = new Map<any, Injector>();
   /** root injector's scope */
-  private scope: Scope;
-  private options: IInjectorOptions = {};
+  private readonly scope: Scope;
+  /** options, default values */
+  private readonly options: IInjectorOptions = {
+    strictProviders: true,
+  };
 
-  constructor(
+  private constructor(
     private object: any,
     private providers?: TProvider[],
     options?: IInjectorOptions,
   ) {
     this.scope = new Scope(undefined, providers);
     this.options = {
-      strictProviders: true,
+      ...this.options,
       ...options,
     };
   }
 
-  public static create(object: any, providers?: TProvider<any>[], options?: IInjectorOptions): Injector {
+  /**
+   * Injector factory. Create injector's instance. To one object possible create only one injector class.
+   * @param object object of injections (root object which conducts providers and their dependencies)
+   * @param providers allowed providers for resolving dependencies. When option strictProviders is false then providers
+   * is unnecessary.
+   * @param options provider options
+   */
+  public static create<T = any>(object: T, providers?: TProvider<any>[], options?: IInjectorOptions): Injector {
     if (Injector.collection.has(object)) {
       throw new InjectorAlreadyExistsException();
     }
@@ -44,6 +102,11 @@ export class Injector {
     return injector;
   }
 
+  /**
+   * Instantiate tree of dependencies begin from passed type (constructor or class) and returns root instance
+   * @param type root constructor or class type
+   * @param parentScope parent scope, if not passed then using root scope
+   */
   public instantiate<T = any>(type: Type<T>, parentScope?: Scope): T {
     const injectOptions = DecoratorHelper.getInjectionOptions(type);
     const injectParams = DecoratorHelper.getInjectParams(type);
@@ -65,7 +128,7 @@ export class Injector {
     }
 
     // instantiating and resolving constructor's parameters
-    const paramsInstances = DecoratorHelper.getParamTypes(type).map((paramType, index) => {
+    const paramsInstances = DecoratorHelper.getParamTypes(type).map((paramType, index): T | undefined => {
       const paramToken = injectParams.get(index);
       if (injectParams.has(index) && paramToken) return this.instantiateParam(paramToken, scope);
       return this.instantiate(paramType, scope);
@@ -78,12 +141,25 @@ export class Injector {
     return instance;
   }
 
+  /**
+   * Instantiate param marked @Inject directive
+   * @param token injected token
+   * @param scope scope which needs the param
+   * @private
+   */
   private instantiateParam<T = any>(token: Token, scope: Scope): T | undefined {
     const provider = scope.getProvider(token);
     if (!provider) return undefined;
-    return this.makeInstance(Object, provider, []);
+    return this.makeInstance(Object, provider, []) as T;
   }
 
+  /**
+   * Created instance by all allowing approaches
+   * @param type
+   * @param provider
+   * @param params
+   * @private
+   */
   private makeInstance<T = any>(type: Type<T>, provider: TProvider<T> | undefined, params: any[]): T {
     if (!provider) {
       if (this.options.strictProviders) throw new ProviderNotExistsException(type);
