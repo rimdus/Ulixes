@@ -31,3 +31,11 @@ export class NotInjectableException extends Error {
 
   public name = 'NotInjectableException';
 }
+
+export class FactoryNotFunctionException extends Error {
+  constructor(type?: Type<any>) {
+    super(`Factory for${type ? ` ${type.name}` : ''} not a function`);
+  }
+
+  public name = 'FactoryNotFunctionException';
+}

@@ -4,8 +4,12 @@ export interface IProvide<T = any> {
   provide: Type<T> | Token;
 }
 
+export interface IFactory<T> {
+  (...args: any[]): T;
+}
+
 export interface IFactoryProvider<T> extends IProvide<T> {
-  useFactory: (...args: any[]) => T;
+  useFactory: IFactory<T>;
 }
 
 export interface IClassProvider<T> extends IProvide<T> {

@@ -55,7 +55,7 @@ class Human {
   public body: Body;
 
   constructor(providers?: TProvider[]) {
-    this.injector = Injector.create(this, providers);
+    this.injector = Injector.create(this, providers, { debug: true });
     this.body = this.injector.instantiate(Body);
   }
 }
@@ -108,7 +108,7 @@ describe('Injector', () => {
       public car: Car;
 
       constructor(providers?: TProvider[]) {
-        this.injector = Injector.create(this, providers);
+        this.injector = Injector.create(this, providers, { debug: true });
         this.car = this.injector.instantiate(Car);
       }
     }
@@ -128,7 +128,7 @@ describe('Injector', () => {
     });
 
     it('should inject AnyWheel as useFactory instead of Wheel', () => {
-      const core = new Core([Car, { provide: Wheel, useFactory: args => new AnyWheel('custom') }]);
+      const core = new Core([Car, { provide: Wheel, useFactory: () => new AnyWheel('custom') }]);
       expect(core.car.getWheelCode()).equal('custom');
     });
 

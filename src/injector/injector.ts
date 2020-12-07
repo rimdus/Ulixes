@@ -1,4 +1,5 @@
 import {
+  FactoryNotFunctionException,
   IncorrectProviderException,
   InjectorAlreadyExistsException,
   NotInjectableException,
@@ -70,6 +71,7 @@ export class Injector {
   private readonly scope: Scope;
   /** options, default values */
   private readonly options: IInjectorOptions = {
+    debug: false,
     strictProviders: true,
   };
 
@@ -106,8 +108,9 @@ export class Injector {
    * Instantiate tree of dependencies begin from passed type (constructor or class) and returns root instance
    * @param type root constructor or class type
    * @param parentScope parent scope, if not passed then using root scope
+   * @param parentType
    */
-  public instantiate<T = any>(type: Type<T>, parentScope?: Scope): T {
+  public instantiate<T = any>(type: Type<T>, parentScope?: Scope, parentType?: Type<any>): T {
     const injectOptions = DecoratorHelper.getInjectionOptions(type);
     const injectParams = DecoratorHelper.getInjectParams(type);
     if (!injectOptions) throw new NotInjectableException(type);
@@ -131,11 +134,11 @@ export class Injector {
     const paramsInstances = DecoratorHelper.getParamTypes(type).map((paramType, index): T | undefined => {
       const paramToken = injectParams.get(index);
       if (injectParams.has(index) && paramToken) return this.instantiateParam(paramToken, scope);
-      return this.instantiate(paramType, scope);
+      return this.instantiate(paramType, scope, type);
     });
 
     // create instance
-    instance = this.makeInstance(type, provider, paramsInstances);
+    instance = this.makeInstance(type, provider, paramsInstances, parentType);
     const scopeForInst = scope.getScopeForType(type, injectParams);
     scopeForInst.addInstance(type, instance);
     return instance;
@@ -158,15 +161,12 @@ export class Injector {
    * @param type
    * @param provider
    * @param params
+   * @param parentType
    * @private
    */
-  private makeInstance<T = any>(type: Type<T>, provider: TProvider<T> | undefined, params: any[]): T {
-    if (!provider) {
-      if (this.options.strictProviders) throw new ProviderNotExistsException(type);
-      return new type(...params);
-    }
-    if (provider === type) {
-      return new type(...params);
+  private makeInstance<T = any>(type: Type<T>, provider: TProvider<T> | undefined, params: any[], parentType?: Type<any>): T {
+    if (!provider || provider === type) {
+      return this.createByType(type, provider, params, parentType);
     }
     if ((provider as IValueProvider<T>).useValue) {
       return (provider as IValueProvider<T>).useValue;
@@ -175,8 +175,22 @@ export class Injector {
       return new (provider as IClassProvider<T>).useClass(...params);
     }
     if (typeof (provider as IFactoryProvider<T>).useFactory === 'function') {
-      return (provider as IFactoryProvider<T>).useFactory(...params);
+      return this.createByFactory((provider as IFactoryProvider<T>), type, params, parentType);
     }
     throw new IncorrectProviderException();
+  }
+
+  private createByType<T = any>(type: Type<T>, provider: TProvider<T> | undefined, params: any[], parentType?: Type<any>): T {
+    if (!provider && this.options.strictProviders) throw new ProviderNotExistsException(type);
+    if (this.options.debug) console.log(`${parentType?.name ?? ''} <-- ${type.name}`);
+    return new type(...params);
+  }
+
+  private createByFactory<T = any>(factory: IFactoryProvider<T>, type: Type<T>, params: any[], parentType?: Type<any>): T {
+    if (typeof factory.useFactory === 'function') {
+      if (this.options.debug) console.log(`${parentType?.name ?? ''} <-- ${(factory.provide as Type<T>).name}`);
+      return factory.useFactory.call(undefined, ...params);
+    }
+    throw new FactoryNotFunctionException(type);
   }
 }
