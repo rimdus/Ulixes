@@ -57,4 +57,12 @@ export class Scope {
     return this.parentScope.getProvider(type);
   }
 
+  /**
+   * Returns instance of type
+   * @param type
+   */
+  public getInstance<T = any>(type: Type<T>): T | undefined {
+    return this.instances.get(type) as T;
+  }
+
 }

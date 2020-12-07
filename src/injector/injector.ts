@@ -145,6 +145,14 @@ export class Injector {
   }
 
   /**
+   * Returns instance of type from root scope
+   * @param type
+   */
+  public get<T = any>(type: Type<T>): T | undefined {
+    return this.scope.getInstance(type);
+  }
+
+  /**
    * Instantiate param marked @Inject directive
    * @param token injected token
    * @param scope scope which needs the param

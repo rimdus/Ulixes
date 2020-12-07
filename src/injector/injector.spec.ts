@@ -141,6 +141,11 @@ describe('Injector', () => {
       const core = new Core([Car, { provide: Wheel, useValue: { getCode: () => 'wooden' } }]);
       expect(core.car.getWheelCode()).equal('wooden');
     });
+
+    it('should injector.get returns instance of Wheel', () => {
+      const core = new Core([Car, Wheel]);
+      expect(core.injector.get(Wheel)).instanceOf(Wheel);
+    });
   });
 
   context('Params cases', () => {
