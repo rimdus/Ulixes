@@ -8,6 +8,7 @@
     "test": "mocha -r ts-node/register **/*.spec.ts",
     "lint": "eslint **/*.ts",
     "build": "gulp",
+    "pbl": "npm run builf && npm run publish",
     "pack": "npm run test && npm run build && npm pack"
   },
   "repository": {
