@@ -83,3 +83,4 @@ resolving instances.
 Option | Required | Type | Default | Description
 --- | --- | --- | --- | ---
 `strictProviders` | no | boolean | true | In the strict providers mode all injectable classes must be mentioned in providers
+`debug` | no | boolean | false | On / Off debugger mode
