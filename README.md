@@ -1,6 +1,6 @@
 # Ulixes
 
-The Lightweight Dependency Injection package for Node.Js.
+The Lightweight Dependency Injection package in Angular and NestJs style for Node.Js.
 
 ## Installation
 
