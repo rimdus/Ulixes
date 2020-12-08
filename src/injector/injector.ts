@@ -180,24 +180,29 @@ export class Injector {
       return (provider as IValueProvider<T>).useValue;
     }
     if ((provider as IClassProvider<T>).useClass) {
-      return new (provider as IClassProvider<T>).useClass(...params);
+      return this.createByClass(type, provider as IClassProvider<T>, params, parentType);
     }
     if (typeof (provider as IFactoryProvider<T>).useFactory === 'function') {
-      return this.createByFactory((provider as IFactoryProvider<T>), type, params, parentType);
+      return this.createByFactory(provider as IFactoryProvider<T>, type, params, parentType);
     }
     throw new IncorrectProviderException();
   }
 
+  private createByClass<T = any, C = any>(type: Type<T>, provider: IClassProvider<C>, params: any[], parentType?: Type<any>): C {
+    if (this.options.debug) console.log(`${parentType?.name ?? 'root'} <-- ${type.name}(${provider.useClass.name})`);
+    return new provider.useClass(...params);
+  }
+
   private createByType<T = any>(type: Type<T>, provider: TProvider<T> | undefined, params: any[], parentType?: Type<any>): T {
     if (!provider && this.options.strictProviders) throw new ProviderNotExistsException(type);
-    if (this.options.debug) console.log(`${parentType?.name ?? ''} <-- ${type.name}`);
+    if (this.options.debug) console.log(`${parentType?.name ?? 'root'} <-- ${type.name}`);
     return new type(...params);
   }
 
-  private createByFactory<T = any>(factory: IFactoryProvider<T>, type: Type<T>, params: any[], parentType?: Type<any>): T {
-    if (typeof factory.useFactory === 'function') {
-      if (this.options.debug) console.log(`${parentType?.name ?? ''} <-- ${(factory.provide as Type<T>).name}`);
-      return factory.useFactory.call(undefined, ...params);
+  private createByFactory<T = any>(provider: IFactoryProvider<T>, type: Type<T>, params: any[], parentType?: Type<any>): T {
+    if (typeof provider.useFactory === 'function') {
+      if (this.options.debug) console.log(`${parentType?.name ?? 'root'} <-- ${(provider.provide as Type<T>).name}`);
+      return provider.useFactory.call(undefined, ...params.concat([this.object]));
     }
     throw new FactoryNotFunctionException(type);
   }

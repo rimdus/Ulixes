@@ -83,13 +83,19 @@ describe('Injector', () => {
     @Injectable()
     class AnyWheel implements IGetCode {
       private code: string;
+      private obj: any;
 
-      constructor(code: string) {
+      constructor(code: string, obj?: any) {
         this.code = code;
+        this.obj = obj;
       }
 
       public getCode(): string {
         return this.code;
+      }
+
+      public getObj(): any {
+        return this.obj;
       }
     }
 
@@ -128,8 +134,13 @@ describe('Injector', () => {
     });
 
     it('should inject AnyWheel as useFactory instead of Wheel', () => {
-      const core = new Core([Car, { provide: Wheel, useFactory: () => new AnyWheel('custom') }]);
+      const core = new Core([Car, { provide: Wheel, useFactory: (obj) => new AnyWheel('custom', obj) }]);
       expect(core.car.getWheelCode()).equal('custom');
+    });
+
+    it('should inject AnyWheel as useFactory instead of Wheel and pass root object', () => {
+      const core = new Core([Car, { provide: Wheel, useFactory: (obj) => new AnyWheel('custom', obj) }]);
+      expect((core.car.wheel as AnyWheel).getObj()).equal(core);
     });
 
     it('should inject AnyWheel as useValue instead of Wheel', () => {
