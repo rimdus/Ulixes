@@ -1,4 +1,4 @@
-import { IInjectOptionsMetadata, TInjectParamsMetadata, Type } from '../interfaces';
+import { IInjectOptionsMetadata, TInjectParamsMetadata, Token, Type } from '../interfaces';
 import { INJECT_OPTIONS_METADATA, PARAMTYPES_METADATA } from '../constants';
 
 export class DecoratorHelper {
@@ -12,7 +12,7 @@ export class DecoratorHelper {
     return Reflect.getMetadata(INJECT_OPTIONS_METADATA, target) as IInjectOptionsMetadata;
   }
 
-  public static defineInjectParam(target: Type<any>, paramIndex: number, token: string): void {
+  public static defineInjectParam(target: Type<any>, paramIndex: number, token: Token): void {
     if (!DecoratorHelper.injectTargetParams.has(target)) DecoratorHelper.injectTargetParams.set(target, new Map());
     const params = DecoratorHelper.injectTargetParams.get(target);
     if (params) params.set(paramIndex, token);

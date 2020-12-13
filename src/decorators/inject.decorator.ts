@@ -1,7 +1,7 @@
 import { DecoratorHelper } from '.';
-import { Type } from '../interfaces';
+import { Token, Type } from '../interfaces';
 
-export function Inject(token?: string) {
+export function Inject(token?: Token) {
   return (target: Type<any>, key: string | symbol, index?: number): void => {
     if (typeof key === 'undefined' && index !== undefined) {
       let realToken = token;
