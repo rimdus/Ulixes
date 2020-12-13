@@ -42,12 +42,16 @@ export class Scope {
    * @param type
    * @param injectParams
    */
-  public getScopeForType(type: Type<any>, injectParams?: TInjectParamsMetadata): Scope {
+  public getScopeForType(type: Type<any> | Token, injectParams?: TInjectParamsMetadata): Scope {
     const provider = this.providers.find(provider => (provider as IProvide).provide === type);
     if (provider || !this.parentScope || this.hasParamsInProviders(injectParams)) return this;
     return this.parentScope.getScopeForType(type, injectParams);
   }
 
+  /**
+   * Searches provider from this scope to the root scope
+   * @param type constructor type or token
+   */
   public getProvider<T = any>(type: Type<T> | Token): TProvider<T> | undefined {
     const provider = this.providers.find(provider => {
       if ((provider as IProvide<T>).provide) return (provider as IProvide<T>).provide === type;

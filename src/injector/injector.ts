@@ -113,7 +113,9 @@ export class Injector {
   public instantiate<T = any>(type: Type<T>, parentScope?: Scope, parentType?: Type<any>): T {
     const injectOptions = DecoratorHelper.getInjectionOptions(type);
     const injectParams = DecoratorHelper.getInjectParams(type);
-    if (!injectOptions) throw new NotInjectableException(type);
+    if (!injectOptions) {
+      throw new NotInjectableException(type);
+    }
     // Every instance has an own scope on an every level
     const scope = new Scope(parentScope || this.scope, injectOptions.providers);
     // search for instance while will not be found injected params or provider
@@ -133,7 +135,7 @@ export class Injector {
     // instantiating and resolving constructor's parameters
     const paramsInstances = DecoratorHelper.getParamTypes(type).map((paramType, index): T | undefined => {
       const paramToken = injectParams.get(index);
-      if (injectParams.has(index) && paramToken) return this.instantiateParam(paramToken, scope);
+      if (injectParams.has(index) && paramToken) return this.instantiateParam(paramToken, scope, type);
       return this.instantiate(paramType, scope, type);
     });
 
@@ -153,14 +155,18 @@ export class Injector {
   }
 
   /**
-   * Instantiate param marked @Inject directive
+   * Instantiate param marked by @Inject directive
    * @param token injected token
    * @param scope scope which needs the param
+   * @param parentType
    * @private
    */
-  private instantiateParam<T = any>(token: Token, scope: Scope): T | undefined {
+  private instantiateParam<T = any>(token: Token, scope: Scope, parentType: Type<any>): T | undefined {
     const provider = scope.getProvider(token);
     if (!provider) return undefined;
+    if ((provider as IClassProvider<T>).useClass) {
+      return this.instantiate((provider as IClassProvider<T>).useClass, scope, parentType);
+    }
     return this.makeInstance(Object, provider, []) as T;
   }
 

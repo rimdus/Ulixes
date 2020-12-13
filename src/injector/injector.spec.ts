@@ -99,9 +99,24 @@ describe('Injector', () => {
       }
     }
 
+    interface IMotor {
+      start: () => string;
+    }
+
     @Injectable()
     class Car {
-      constructor(public wheel: Wheel) {
+      constructor(
+        public wheel: Wheel,
+        @Inject('MOTOR') public motor: IMotor,
+      ) {
+
+      }
+
+      public start(): string {
+        if (this.motor) {
+          return this.motor.start();
+        }
+        return '';
       }
 
       public getWheelCode(): string {
@@ -156,6 +171,27 @@ describe('Injector', () => {
     it('should injector.get returns instance of Wheel', () => {
       const core = new Core([Car, Wheel]);
       expect(core.injector.get(Wheel)).instanceOf(Wheel);
+    });
+
+    it('should start motor v6', () => {
+      @Injectable()
+      class Valves {
+        private valvesCount = 0;
+        constructor(@Inject('VALVES_COUNT') valvesCount: number) {
+          this.valvesCount = valvesCount ?? this.valvesCount;
+        }
+        count(): number {
+          return this.valvesCount;
+        }
+      }
+      @Injectable()
+      class V6 {
+        constructor(private valves: Valves) {
+        }
+        start() { return `v${this.valves.count()}` }
+      };
+      const core = new Core([Car, Wheel, V6, Valves, { provide: 'MOTOR', useClass: V6 }, { provide: 'VALVES_COUNT', useValue: 6 }]);
+      expect(core.injector.get(Car)?.start()).equal('v6');
     });
   });
 
