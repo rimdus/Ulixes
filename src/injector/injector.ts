@@ -66,6 +66,7 @@ import { DecoratorHelper } from '../decorators';
  * ```
  */
 export class Injector {
+  private static globe = Symbol('GLOBE');
   private static collection: Map<any, Injector> = new Map<any, Injector>();
   /** root injector's scope */
   private readonly scope: Scope;
@@ -88,19 +89,20 @@ export class Injector {
   }
 
   /**
-   * Injector factory. Create injector's instance. To one object possible create only one injector class.
+   * Injector factory. Create injector's instance. Only one injector instance possible being created for one object.
    * @param object object of injections (root object which conducts providers and their dependencies)
    * @param providers allowed providers for resolving dependencies. When option strictProviders is false then providers
    * is unnecessary.
    * @param options provider options
    */
-  public static create<T = any>(object: T, providers?: TProvider<any>[], options?: IInjectorOptions): Injector {
-    if (Injector.collection.has(object)) {
+  public static create<T = any>(object?: T, providers?: TProvider<any>[], options?: IInjectorOptions): Injector {
+    const scope = object ?? Injector.globe;
+    if (Injector.collection.has(scope)) {
       throw new InjectorAlreadyExistsException();
     }
-    const injector = new Injector(object, providers, options);
+    const injector = new Injector(scope, providers, options);
 
-    Injector.collection.set(object, injector);
+    Injector.collection.set(scope, injector);
     return injector;
   }
 
