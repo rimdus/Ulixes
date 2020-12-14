@@ -13,10 +13,15 @@ class Nail {
   }
 }
 
+const FINGER_COLOR_TOKEN = new InjectionToken('FINGER_COLOR_TOKEN');
+const FINGER_BEAUTY_TOKEN = new InjectionToken('FINGER_BEAUTY_TOKEN');
+
 @Injectable()
 class Finger {
   constructor(
     @Inject('FINGER_OPT') public opt: { name: string },
+    @Inject(FINGER_COLOR_TOKEN) public color: string,
+    @Inject(FINGER_BEAUTY_TOKEN) public beauty: boolean,
     public nail: Nail,
   ) {
     if (!opt) this.opt = { name: 'index' };
@@ -123,13 +128,9 @@ class Car {
   }
 }
 
+@Injectable()
 class Core {
-  public injector: Injector;
-  public car: Car;
-
-  constructor(providers?: TProvider[]) {
-    this.injector = Injector.create(this, providers, { debug: true });
-    this.car = this.injector.instantiate(Car);
+  constructor(public car: Car) {
   }
 }
 
@@ -137,45 +138,56 @@ describe('Injector', () => {
   context('Flat cases', () => {
 
     it('should instantiate and return wheel code', () => {
-      const core = new Core([Car, Wheel]);
+      const core = Injector.create({}, [Core, Car, Wheel]).instantiate(Core);
       expect(core.car.getWheelCode()).equal('123');
     });
 
     it('should throws error class ProviderNotExistsException', () => {
-      expect(() => new Core([Car])).to.throws(ProviderNotExistsException);
+      expect(() => Injector.create({}, [Car]).instantiate(Core)).throws(ProviderNotExistsException);
     });
 
     it('should inject SpareWheel as useClass instead of Wheel', () => {
-      const core = new Core([Car, { provide: Wheel, useClass: SpareWheel }]);
+      const core = Injector.create({}, [Core, Car, { provide: Wheel, useClass: SpareWheel }]).instantiate(Core);
       expect(core.car.getWheelCode()).equal('sw123');
     });
 
     it('should inject AnyWheel as useFactory instead of Wheel', () => {
-      const core = new Core([Car, { provide: Wheel, useFactory: (obj) => new AnyWheel('custom', obj) }]);
+      const core = Injector.create(
+        {},
+        [Core, Car, { provide: Wheel, useFactory: (obj) => new AnyWheel('custom', obj) }],
+      ).instantiate(Core);
       expect(core.car.getWheelCode()).equal('custom');
     });
 
     it('should inject AnyWheel as useFactory instead of Wheel and pass root object', () => {
-      const core = new Core([Car, { provide: Wheel, useFactory: (obj) => new AnyWheel('custom', obj) }]);
-      expect((core.car.wheel as AnyWheel).getObj()).equal(core);
+      const root = Object.create({});
+      const core = Injector.create(root, [
+        Core,
+        Car,
+        {
+          provide: Wheel, useFactory: (obj) => new AnyWheel('custom', obj),
+        },
+      ]).instantiate(Core);
+      expect((core.car.wheel as AnyWheel).getObj()).equal(root);
     });
 
     it('should inject AnyWheel as useValue instead of Wheel', () => {
-      const core = new Core([Car, { provide: Wheel, useValue: new AnyWheel('useValue') }]);
+      const core = Injector.create({}, [Core, Car, { provide: Wheel, useValue: new AnyWheel('useValue') }]).instantiate(
+        Core);
       expect(core.car.getWheelCode()).equal('useValue');
     });
 
     it('should inject literal object as useValue instead of Wheel', () => {
-      const core = new Core([Car, { provide: Wheel, useValue: { getCode: () => 'wooden' } }]);
+      const core = Injector.create({}, [Core, Car, { provide: Wheel, useValue: { getCode: () => 'wooden' } }])
+        .instantiate(Core);
       expect(core.car.getWheelCode()).equal('wooden');
     });
 
     it('should injector.get returns instance of Wheel', () => {
-      const core = new Core([Car, Wheel]);
-      expect(core.injector.get(Wheel)).instanceOf(Wheel);
+      const injector = Injector.create({}, [Core, Car, Wheel]);
+      injector.instantiate(Core);
+      expect(injector.get(Wheel)).instanceOf(Wheel);
     });
-
-
   });
 
   context('Params cases', () => {
@@ -184,20 +196,52 @@ describe('Injector', () => {
       expect(human.body.leftArm.indexFinger.opt.name).to.be.equal('index');
       expect(human.body.leftFoot.indexFinger).equal(human.body.leftArm.indexFinger);
     });
-    it('should left arm\'s finger be injected by token', () => {
+
+    it('should left arm\'s finger be injected by token as useValue', () => {
       const human = new Human([Body, Crutch, Arm, Foot, Finger, Nail, {
         provide: 'FINGER_OPT',
         useValue: { name: 'middle' },
       }]);
       expect(human.body.leftArm.indexFinger.opt.name).to.be.equal('middle');
     });
+
+    it('should left finger\'s color be injected by token as useValue', () => {
+      const human = new Human([Body, Crutch, Arm, Foot, Finger, Nail, {
+        provide: FINGER_COLOR_TOKEN,
+        useValue: 'green',
+      }]);
+      expect(human.body.leftArm.indexFinger.color).to.be.equal('green');
+    });
+
+    it('should left finger\'s beauty be injected by token as useValue', () => {
+      const human = new Human([Body, Crutch, Arm, Foot, Finger, Nail, {
+        provide: FINGER_BEAUTY_TOKEN,
+        useValue: true,
+      }]);
+      expect(human.body.leftArm.indexFinger.beauty).to.be.true;
+    });
+
+    it('should left finger\'s beauty not be injected by token', () => {
+      const human = new Human([Body, Crutch, Arm, Foot, Finger, Nail]);
+      expect(human.body.leftArm.indexFinger.beauty).to.be.undefined;
+    });
+
+    it('should left arm\'s finger be injected by token as useFactory', () => {
+      const human = new Human([Body, Crutch, Arm, Foot, Finger, Nail, {
+        provide: 'FINGER_OPT',
+        useFactory: () => ({ name: 'thumb' }),
+      }]);
+      expect(human.body.leftArm.indexFinger.opt.name).to.be.equal('thumb');
+    });
+
     it('should left arm be injected by custom class w/o injected params', () => {
       const human = new Human([Body, Crutch, Foot, Finger, Nail, Arm]);
       expect(human.body.crutch.indexFinger.opt.name).to.be.equal('pinky');
       expect(human.body.leftFoot.indexFinger.opt.name).to.be.equal('index');
       expect(human.body.crutch.indexFinger).not.equal(human.body.leftFoot.indexFinger);
     });
-    it('should 2 left arm be injected by custom class w/o injected params', () => {
+
+    it('should 2 left arm be injected by custom class w/o injected params as useClass', () => {
       @Injectable({ providers: [{ provide: 'FINGER_OPT', useValue: { name: 'pinky' } }] })
       class CustomArm {
         constructor(public pinkyFinger: Finger) {
@@ -213,65 +257,136 @@ describe('Injector', () => {
       @Injectable()
       class Valves {
         private valvesCount = 0;
+
         constructor(@Inject('VALVES_COUNT') valvesCount: number) {
           this.valvesCount = valvesCount ?? this.valvesCount;
         }
+
         count(): number {
           return this.valvesCount;
         }
       }
+
       @Injectable()
       class V6 {
         constructor(private valves: Valves) {
         }
-        start() { return `v${this.valves.count()}` }
-      };
-      const core = new Core([Car, Wheel, V6, Valves, { provide: 'MOTOR', useClass: V6 }, { provide: 'VALVES_COUNT', useValue: 6 }]);
-      expect(core.injector.get(Car)?.start()).equal('v6');
+
+        start() {
+          return `v${this.valves.count()}`
+        }
+      }
+      const injector = Injector.create(
+        {},
+        [Core, Car, Wheel, V6, Valves, { provide: 'MOTOR', useClass: V6 }, { provide: 'VALVES_COUNT', useValue: 6 }],
+      );
+      injector.instantiate(Core);
+      expect(injector.get(Car)?.start()).equal('v6');
     });
 
     it('should inject valves count by injection token', () => {
       const VALVES_COUNT = new InjectionToken('VALVES_COUNT');
+
       @Injectable()
       class Valves {
-        private valvesCount = 0;
+        private readonly valvesCount: number = 0;
+
         constructor(@Inject(VALVES_COUNT) valvesCount: number) {
           this.valvesCount = valvesCount ?? this.valvesCount;
         }
+
         count(): number {
           return this.valvesCount;
         }
       }
+
       @Injectable()
       class V6 {
         constructor(private valves: Valves) {
         }
-        start() { return `v${this.valves.count()}` }
-      };
-      const core = new Core([Car, Wheel, V6, Valves, { provide: 'MOTOR', useClass: V6 }, { provide: VALVES_COUNT, useValue: 6 }]);
-      expect(core.injector.get(Car)?.start()).equal('v6');
+
+        start() {
+          return `v${this.valves.count()}`
+        }
+      }
+      const injector = Injector.create(
+        {},
+        [Core, Car, Wheel, V6, Valves, { provide: 'MOTOR', useClass: V6 }, { provide: VALVES_COUNT, useValue: 6 }],
+      );
+      injector.instantiate(Core);
+      expect(injector.get(Car)?.start()).equal('v6');
     });
 
     it('should inject valves count as factory', () => {
       const VALVES_COUNT = new InjectionToken('VALVES_COUNT');
+
       @Injectable()
       class Valves {
         private valvesCount = 0;
+
         constructor(@Inject(VALVES_COUNT) valvesCount: number) {
           this.valvesCount = valvesCount ?? this.valvesCount;
         }
+
         count(): number {
           return this.valvesCount;
         }
       }
+
       @Injectable()
       class V6 {
         constructor(private valves: Valves) {
         }
-        start() { return `v${this.valves.count()}` }
-      };
-      const core = new Core([Car, Wheel, V6, Valves, { provide: 'MOTOR', useClass: V6 }, { provide: VALVES_COUNT, useFactory: () => 6 }]);
-      expect(core.injector.get(Car)?.start()).equal('v6');
+
+        start() {
+          return `v${this.valves.count()}`
+        }
+      }
+      const injector = Injector.create(
+        {},
+        [Core, Car, Wheel, V6, Valves, { provide: 'MOTOR', useClass: V6 }, {
+          provide: VALVES_COUNT,
+          useFactory: () => 6,
+        }],
+      );
+      injector.instantiate(Core);
+      expect(injector.get(Car)?.start()).equal('v6');
+    });
+  });
+
+  context('Four level', () => {
+    it('should inject nail\'s color black on 4 level as value', () => {
+      @Injectable()
+      class Nail {
+        public color = 'transparent';
+
+        constructor(@Inject('NAIL_COLOR') color: string) {
+          this.color = color;
+        }
+      }
+
+      @Injectable()
+      class Finger {
+        constructor(public nail: Nail) {
+        }
+      }
+
+      @Injectable()
+      class Hand {
+        constructor(public finger: Finger) {
+        }
+      }
+
+      @Injectable()
+      class Body {
+        constructor(public leftHand: Hand) {
+        }
+      }
+
+      const app = {}; // any object for being a root for the injector
+      const injector = Injector.create(app, [Body, Hand, Finger, Nail, { provide: 'NAIL_COLOR', useValue: 'black' }]);
+      const body = injector.instantiate(Body);
+      expect(body.leftHand.finger.nail.color).equal('black');
     });
   });
 });
