@@ -73,7 +73,11 @@ class Body {
 }
 
 const indexFinger = new Finger('index');
-const injector = Injector.create(null /* using global */, [Body, Hand, { provide: Finger, useValue: indexFinger }]);
+const injector = Injector.create(null /* using global */, [
+  Body,
+  Hand,
+  { provide: Finger, useValue: indexFinger },
+]);
 const body = injector.instantiate(Body);
 expect(body.leftHand.finger.getName()).equal('index');
 ```
@@ -112,7 +116,11 @@ class Body {
   }
 }
 
-const injector = Injector.create(null /* using global */, [Body, Hand, { provide: Finger, useClass: MiddleFinger }]);
+const injector = Injector.create(null /* using global */, [
+  Body,
+  Hand,
+  { provide: Finger, useClass: MiddleFinger },
+]);
 const body = injector.instantiate(Body);
 expect(body.leftHand.finger.getName()).equal('middle');
 ```
@@ -145,7 +153,11 @@ class Body {
   }
 }
 
-const injector = Injector.create(null /* using global */, [Body, Hand, { provide: Finger, useFactory: () => new Finger('middle') }]);
+const injector = Injector.create(null /* using global */, [
+  Body,
+  Hand,
+  { provide: Finger, useFactory: () => new Finger('middle') },
+]);
 const body = injector.instantiate(Body);
 expect(body.leftHand.finger.getName()).equal('middle');
 ```
@@ -182,8 +194,13 @@ class Body {
   }
 }
 
-const app = {}; // any object for being a root for the injector
-const injector = Injector.create(app, [Body, Hand, Finger, Nail, { provide: 'NAIL_COLOR', useValue: 'black' }]);
+const injector = Injector.create(null /* using global */, [
+  Body,
+  Hand,
+  Finger,
+  Nail,
+  { provide: 'NAIL_COLOR', useValue: 'black' },
+]);
 const body = injector.instantiate(Body);
 expect(body.leftHand.finger.nail.color).equal('black');
 ```
