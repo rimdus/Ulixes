@@ -107,6 +107,15 @@ export class Injector {
   }
 
   /**
+   * Returns exists injector or undefined if not
+   * @param object object of injections (root object which conducts providers and their dependencies)
+   */
+  public static getInjector<T = any>(object?: T): Injector | undefined {
+    const scope = object ?? Injector.globe;
+    return Injector.collection.get(scope);
+  }
+
+  /**
    * Instantiate tree of dependencies begin from passed type (constructor or class) and returns root instance
    * @param type root constructor or class type
    * @param parentScope parent scope, if not passed then using root scope
