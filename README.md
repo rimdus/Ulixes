@@ -1,7 +1,7 @@
 # Ulixes
 
-The Lightweight Dependency Injection package in the Angular and NestJs style for Node.Js funded on the inversion of
-control principle (IoC).
+The Lightweight Dependency Injection package in the Angular and NestJs style for Node.Js based on the inversion of
+control (IoC).
 
 ## Installation
 
