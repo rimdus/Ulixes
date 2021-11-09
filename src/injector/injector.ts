@@ -152,7 +152,7 @@ export class Injector {
 
     // create instance
     instance = this.makeInstance(type, provider, paramsInstances, parentType);
-    const scopeForInst = scope.getScopeForType(type, injectParams);
+    const scopeForInst = scope.getScopeForType(type, injectParams, paramsInstances);
     scopeForInst.addInstance(type, instance);
     return instance;
   }

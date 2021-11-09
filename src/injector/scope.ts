@@ -10,7 +10,7 @@ export class Scope {
     this.providers = providers ?? [];
   }
 
-  public findUpInstance<T = any>(type: Type<T>, injectParams?: TInjectParamsMetadata): T | undefined {
+  public findUpInstance<T = any>(type: Type<T>, injectParams: TInjectParamsMetadata): T | undefined {
     if (this.instances.has(type)) return this.instances.get(type) as T;
     if (this.hasParamsInProviders(injectParams)) return undefined;
     if (this.hasTypeInProviders(type)) return undefined;
@@ -26,10 +26,15 @@ export class Scope {
     this.providers.push(...providers);
   }
 
-  private hasParamsInProviders(injectParams?: TInjectParamsMetadata): boolean {
+  private hasParamsInProviders(injectParams: TInjectParamsMetadata): boolean {
     if (!injectParams) return false;
     return !!Array.from(injectParams.values())
       .find(token => this.providers.find(provider => (provider as IProvide).provide === token));
+  }
+
+  private hasParamInstances(paramInstances: any[]): boolean {
+    return !!Array
+      .from(this.instances.values()).find(instance => paramInstances.find(paramInstance => instance === paramInstance));
   }
 
   private hasTypeInProviders(type: Type<any>): boolean {
@@ -42,10 +47,10 @@ export class Scope {
    * @param type
    * @param injectParams
    */
-  public getScopeForType(type: Type<any> | Token, injectParams?: TInjectParamsMetadata): Scope {
+  public getScopeForType(type: Type<any> | Token, injectParams: TInjectParamsMetadata, paramsInstances: any[]): Scope {
     const provider = this.providers.find(provider => (provider as IProvide).provide === type);
-    if (provider || !this.parentScope || this.hasParamsInProviders(injectParams)) return this;
-    return this.parentScope.getScopeForType(type, injectParams);
+    if (provider || !this.parentScope || this.hasParamsInProviders(injectParams) || this.hasParamInstances(paramsInstances)) return this;
+    return this.parentScope.getScopeForType(type, injectParams, paramsInstances);
   }
 
   /**

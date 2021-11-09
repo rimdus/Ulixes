@@ -276,6 +276,7 @@ describe('Injector', () => {
           return `v${this.valves.count()}`
         }
       }
+
       const injector = Injector.create(
         {},
         [Core, Car, Wheel, V6, Valves, { provide: 'MOTOR', useClass: V6 }, { provide: 'VALVES_COUNT', useValue: 6 }],
@@ -309,6 +310,7 @@ describe('Injector', () => {
           return `v${this.valves.count()}`
         }
       }
+
       const injector = Injector.create(
         {},
         [Core, Car, Wheel, V6, Valves, { provide: 'MOTOR', useClass: V6 }, { provide: VALVES_COUNT, useValue: 6 }],
@@ -342,6 +344,7 @@ describe('Injector', () => {
           return `v${this.valves.count()}`
         }
       }
+
       const injector = Injector.create(
         {},
         [Core, Car, Wheel, V6, Valves, { provide: 'MOTOR', useClass: V6 }, {
@@ -387,6 +390,71 @@ describe('Injector', () => {
       const injector = Injector.create(app, [Body, Hand, Finger, Nail, { provide: 'NAIL_COLOR', useValue: 'black' }]);
       const body = injector.instantiate(Body);
       expect(body.leftHand.finger.nail.color).equal('black');
+    });
+  });
+
+  context('different siblings with same classes', () => {
+    @Injectable()
+    class Leaf {
+      constructor(
+        @Inject('color') public color: string,
+        ) {
+      }
+    }
+
+    @Injectable()
+    class ColorUtils {
+      constructor(public leaf: Leaf) {
+      }
+
+      public getColor(): string {
+        return this.leaf.color;
+      }
+    }
+
+    @Injectable({ providers: [{ provide: 'color', useValue: 'green' }] })
+    class LeftSibling {
+      constructor(
+        public leaf: Leaf,
+        public colorUtils: ColorUtils,
+        ) {
+      }
+    }
+
+    @Injectable({ providers: [{ provide: 'color', useValue: 'yellow' }] })
+    class RightSibling {
+      constructor(
+        public leaf: Leaf,
+        public colorUtils: ColorUtils,
+        ) {
+      }
+    }
+
+    @Injectable()
+    class Trunk {
+      constructor(
+        public leftSibling: LeftSibling,
+        public rightSibling: RightSibling,
+      ) {
+      }
+    }
+
+    class Tree {
+      public injector: Injector;
+      public trunk: Trunk;
+
+      constructor(providers?: TProvider[]) {
+        this.injector = Injector.create(this, providers, { debug: true });
+        this.trunk = this.injector.instantiate(Trunk);
+      }
+    }
+
+    it('should check one provider in different scopes', () => {
+      const tree = new Tree([Trunk, RightSibling, LeftSibling, Leaf, ColorUtils]);
+      expect(tree.trunk.leftSibling.leaf.color).to.be.equal('green');
+      expect(tree.trunk.rightSibling.leaf.color).to.be.equal('yellow');
+      expect(tree.trunk.leftSibling.colorUtils.getColor()).to.be.equal('green');
+      expect(tree.trunk.rightSibling.colorUtils.getColor()).to.be.equal('yellow');
     });
   });
 });
